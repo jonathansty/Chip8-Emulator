@@ -1,0 +1,3 @@
+[INFO]  Initializing Chip8!
+[INFO]  Initializing Chip8!
+[INFO]  Initializing Chip8!
