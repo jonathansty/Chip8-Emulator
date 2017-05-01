@@ -1,6 +1,6 @@
 solution "Emulators"
   DIR = path.getabsolute("") .. "/"
-  LIBDIR = "D:/_Libraries/"
+  LIBDIR = path.join(DIR, "ThirdParty/")
   location("build/")
   -- Configurations
   configurations{

@@ -1,1 +1,9 @@
-[Bb]uild
+*.out
+lib/**
+tags
+*.ppm
+*.session
+
+*.VC.VC.opendb
+[Bb]uild/**
+[Bb]in/**
