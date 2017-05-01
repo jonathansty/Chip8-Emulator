@@ -7,3 +7,4 @@ tags
 *.VC.VC.opendb
 [Bb]uild/**
 [Bb]in/**
+[Dd]ebug/**

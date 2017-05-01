@@ -1,6 +1,8 @@
 solution "Emulators"
   DIR = path.getabsolute("") .. "/"
-  LIBDIR = path.join(DIR, "ThirdParty/")
+  LIBDIR = path.getabsolute("ThirdParty")
+  print("Dir: " .. DIR) 
+  print("Libdir: " .. LIBDIR) 
   location("build/")
   -- Configurations
   configurations{
@@ -20,16 +22,18 @@ solution "Emulators"
       path.join(DIR, "*.h"),
     }
 
-    GLFW = (LIBDIR .. "glfw-3.2.1.bin.WIN32/")
-    GLM = (LIBDIR .. "glm/")
-    GLEW = (LIBDIR .. "glew-2.0.0/lib/Release/Win32/")
+    GLFW = path.getabsolute(LIBDIR .. "/glfw-3.2.1.bin.WIN32/")
+    GLM = path.getabsolute(LIBDIR .. "/glm/")
+    GLEW = path.getabsolute(LIBDIR .. "/glew-2.0.0/")
     -- Global info
     libdirs{
-      GLEW,
+      path.join(GLEW,"lib/Release/Win32/"),
+      path.join(GLFW,"lib-vc2015")
     }
     includedirs{
-      GLFW .. "include/",
-      GLM
+    	path.join(GLFW,"include"),
+		path.join(GLEW, "include"),
+	    GLM
     }
     debugdir(DIR)
 
