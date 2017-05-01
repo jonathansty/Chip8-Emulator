@@ -209,6 +209,7 @@ void Chip8::emulateCycle(float dt)
 
 
 }
+
 void Chip8::executeOpcode(unsigned short opCode)
 {
 	switch (opCode & 0xF000)
@@ -267,12 +268,28 @@ void Chip8::executeOpcode(unsigned short opCode)
 			m_Pc += 2;
 	}break;
 	case 0x5000: {
-		// Skip if Vx == Vy
-		unsigned short x = (opCode & 0x0F00) >> 8;
-		unsigned short y = (opCode & 0x00F0) >> 4;
-		m_Pc += 2;
-		if (m_V[x] == m_V[y])
-			m_Pc += 2;
+		switch (opCode & 0x000F)
+		{
+			// Skip if Vx == Vy
+			case 0x0000:
+			{
+				unsigned short x = (opCode & 0x0F00) >> 8;
+				unsigned short y = (opCode & 0x00F0) >> 4;
+				if (m_V[x] == m_V[y])
+					m_Pc += 2;
+				m_Pc += 2;
+			}break;
+			// Skip if Vx > Vy
+			case 0x0001:
+			{
+				unsigned short x = (opCode & 0x0F00) >> 8;
+				unsigned short y = (opCode & 0x00F0) >> 4;
+				if (m_V[x] > m_V[y])
+					m_Pc += 2;
+
+				m_Pc += 2;
+			}break;
+		}
 	}break;
 	case 0x6000: {
 		unsigned short x = (opCode & 0x0F00) >> 8;
@@ -501,6 +518,7 @@ void Chip8::executeOpcode(unsigned short opCode)
 	if(m_LogOpCodes)
 		Logger::LogOpCode(opCode);
 }
+
 void Chip8::updateCounters()
 {
 	// update timers
@@ -518,7 +536,6 @@ void Chip8::updateCounters()
 /* Debug GUI drawing */
 void Chip8::onGui(struct nk_context* ctx)
 {
-	nk_style_item i;
 	nk_style_push_style_item(ctx, &ctx->style.window.fixed_background, nk_style_item_color(nk_rgba(0, 0, 0, 0)));
 	if (nk_begin(ctx, "Main menu", nk_rect(0, 0, 1280, 35), 0))
 	{
@@ -536,11 +553,14 @@ void Chip8::onGui(struct nk_context* ctx)
 		}
 		if (nk_menu_begin_label(ctx, "Windows", NK_TEXT_LEFT, nk_vec2(120, 200))) {
 			nk_layout_row_dynamic(ctx, 25, 1);
-			if (nk_menu_item_label(ctx, ((m_ShowRegisters) ? "Registers*" : "Registers"), NK_TEXT_LEFT)) {
-				m_ShowRegisters = !m_ShowRegisters;
+			if (nk_menu_item_label(ctx, ((m_ShowFlags&ShowRegisters) ? "Registers*" : "Registers"), NK_TEXT_LEFT)) {
+				m_ShowFlags = (m_ShowFlags ^ ShowRegisters);
 			}
-			if (nk_menu_item_label(ctx, ((m_ShowSettings) ? "Settings*" : "Settings"), NK_TEXT_LEFT)) {
-				m_ShowSettings = !m_ShowSettings;
+			if (nk_menu_item_label(ctx, ((m_ShowFlags&ShowSettings) ? "Settings*" : "Settings"), NK_TEXT_LEFT)) {
+				m_ShowFlags = (m_ShowFlags ^ ShowSettings);
+			}
+			if (nk_menu_item_label(ctx, ((m_ShowFlags&ShowStacks) ? "Stack*" : "Stack"), NK_TEXT_LEFT)) {
+				m_ShowFlags = (m_ShowFlags ^ ShowStacks);
 			}
 			nk_menu_end(ctx);
 		}
@@ -558,7 +578,7 @@ void Chip8::onGui(struct nk_context* ctx)
 	nk_end(ctx);
 
 	/* Drawing our registers window*/
-	if (m_ShowRegisters)
+	if (m_ShowFlags & ShowRegisters)
 	{
 		if (nk_begin(ctx, "Registers", nk_rect(640, 110, 100, 0xF * 21 + 5), NK_WINDOW_CLOSABLE | NK_WINDOW_BORDER | NK_WINDOW_MOVABLE))
 		{
@@ -566,10 +586,10 @@ void Chip8::onGui(struct nk_context* ctx)
 				{
 					nk_layout_row_dynamic(ctx, 14, 2);
 					{
-						nk_layout_row_push(ctx, 0.25);
+						nk_layout_row_push(ctx, 0.25f);
 						std::string rVal = "V" + std::to_string(i) + ":";
 						nk_label(ctx, rVal.c_str(), NK_TEXT_LEFT);
-						nk_layout_row_push(ctx, 0.7);
+						nk_layout_row_push(ctx, 0.7f);
 						std::string v = std::to_string(GetRegisters()[i]);
 						nk_label(ctx, v.c_str(), NK_TEXT_RIGHT);
 
@@ -577,26 +597,26 @@ void Chip8::onGui(struct nk_context* ctx)
 				}
 			
 		}
-		else m_ShowRegisters = false;
+		else m_ShowFlags &= ~ShowRegisters;
 		nk_end(ctx);
 	}
 
 	/* Drawing our settings window */
-	if (m_ShowSettings)
+	if (m_ShowFlags & ShowSettings)
 	{
 		float w = 270;
 		if (nk_begin(ctx,"Settings",nk_rect(0,60,300,300),NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_TITLE|NK_WINDOW_CLOSABLE))
 		{
 			nk_layout_row_begin(ctx, NK_STATIC,25, 3);
 
-			nk_layout_row_push(ctx, 0.2*w);
+			nk_layout_row_push(ctx, 0.2f*w);
 
 			nk_label(ctx, "EmuSpeed: ", NK_TEXT_LEFT);
-			nk_layout_row_push(ctx, 0.6*w );
+			nk_layout_row_push(ctx, 0.6f*w );
 			float v = 1 / MAX_EMULATE_RATE;
 			nk_slider_float(ctx, 2, &v, 1200, 1.0f);
-			MAX_EMULATE_RATE = 1.0 / v;
-			nk_layout_row_push(ctx, 0.1*w);
+			MAX_EMULATE_RATE = 1.0f / v;
+			nk_layout_row_push(ctx, 0.1f*w);
 			nk_label(ctx, std::to_string(v).c_str(), NK_TEXT_RIGHT);
 
 			nk_layout_row_end(ctx);
@@ -604,13 +624,45 @@ void Chip8::onGui(struct nk_context* ctx)
 			nk_layout_row_begin(ctx, NK_DYNAMIC, 25, 2);
 			nk_layout_row_push(ctx,0.2f);
 			nk_label(ctx, "Log: ", NK_TEXT_LEFT);
-			nk_layout_row_push(ctx, 0.8);
+			nk_layout_row_push(ctx, 0.8f);
 			m_LogOpCodes = !nk_check_label(ctx, "", !m_LogOpCodes);
 			nk_layout_row_end(ctx);
 		}
-		else m_ShowSettings = false;
+		else  m_ShowFlags &= ~ShowSettings;
 		nk_end(ctx);
 
+	}
+	if (m_ShowFlags& ShowStacks)
+	{
+		float w = 270;
+		if (nk_begin(ctx, "Stack", nk_rect(0, 60, w, 300), NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_CLOSABLE))
+		{
+			/* Iterator through the stack and show it */
+			unsigned short opcode = m_Memory[m_Pc];
+			nk_layout_row_begin(ctx, NK_DYNAMIC, 14, 3);
+			{
+				nk_layout_row_push(ctx, 0.33f);
+				nk_label(ctx, ToHex(m_Pc).c_str(), NK_TEXT_LEFT);
+				nk_label(ctx, ToHex(opcode).c_str(), NK_TEXT_LEFT);
+				nk_label(ctx, "TODO", NK_TEXT_LEFT);
+			}
+			nk_layout_row_end(ctx);
+			for (int i = 0; i < m_Sp; ++i)
+			{
+				unsigned short address = m_Stack[i];
+				unsigned short opcode = m_Memory[address];
+				nk_layout_row_begin(ctx, NK_DYNAMIC, 14, 3);
+				{
+					nk_layout_row_push(ctx, 0.33f);
+					nk_label(ctx, ToHex(address).c_str(), NK_TEXT_LEFT);
+					nk_label(ctx, ToHex(opcode).c_str(), NK_TEXT_LEFT);
+					nk_label(ctx, "TODO", NK_TEXT_LEFT);
+				}
+				nk_layout_row_end(ctx);
+			}
+		}
+		else  m_ShowFlags &= ~ShowStacks;
+		nk_end(ctx);
 	}
 }
 

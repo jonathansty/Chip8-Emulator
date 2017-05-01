@@ -11,7 +11,7 @@ public:
 	virtual void onGui(struct nk_context* ctx) override;
 	virtual void onDraw(GLFWwindow* pWindow)const override;
 	virtual void shutdown() override;
-	static void setKeys(GLFWwindow* window,int key,int scannode,int action, int mods);
+	static void setKeys(GLFWwindow* window, int key, int scannode, int action, int mods);
 
 
 	unsigned char const*GetGraphics() const
@@ -36,9 +36,18 @@ private:
 	float m_UpdateTimer = TIMER_RATE;
 	std::string m_CurrentGame = "PONG";
 	mutable bool drawFlag = false;
-	bool m_ShowRegisters = false;
-	bool m_ShowSettings = false;
+
+	/* Debug information drawing */
+	enum ShowFlags : int
+	{
+		ShowRegisters = 0x01,
+		ShowSettings = 0x01 << 1,
+		ShowStacks = 0x01 << 2
+	};
+	int m_ShowFlags = (ShowRegisters | ShowSettings | ShowStacks);
+
 	bool m_LogOpCodes = false;
+
 	DisplayData m_DisplayData;
 
 	unsigned short m_Opcode;

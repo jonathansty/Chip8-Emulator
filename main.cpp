@@ -58,7 +58,6 @@ void drop_callback(GLFWwindow* window, int count, const char** paths)
 
 void nk_gui_update(nk_context* nk_ctx)
 {
-	
 
 }
 void Draw(const IDrawable& d)

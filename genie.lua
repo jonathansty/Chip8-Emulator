@@ -41,6 +41,7 @@ solution "Emulators"
       targetdir(DIR .. "Debug")
       flags{ "Symbols"}
       defines("DEBUG")
+      linkoptions{ "/PDB:MyCompilerIsDump.pdb"}
 
     configuration "Release"
       targetdir(DIR .. "Release")

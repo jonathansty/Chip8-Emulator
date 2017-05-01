@@ -22,7 +22,7 @@
 #include <string>
 #include <map>
 #include <list>
-
+#include <iomanip>
 
 /* Helpers */
 // TODO: Refactor into helper class etc
@@ -186,3 +186,11 @@ private:
 	std::list<std::string> log;
 	bool m_JustLogged = false;
 };
+
+template<typename T>
+std::string ToHex(T in)
+{
+	std::stringstream ss;
+	ss << "0x" << std::setfill('0') << std::setw(sizeof(T) * 2) << std::hex << in;
+	return ss.str();
+}
