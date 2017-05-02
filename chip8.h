@@ -42,9 +42,10 @@ private:
 	{
 		ShowRegisters = 0x01,
 		ShowSettings = 0x01 << 1,
-		ShowStacks = 0x01 << 2
+		ShowStacks = 0x01 << 2,
+		ShowMemory = 0x01 << 3
 	};
-	int m_ShowFlags = (ShowRegisters | ShowSettings | ShowStacks);
+	int m_ShowFlags = (ShowRegisters | ShowSettings | ShowStacks | ShowMemory);
 
 	bool m_LogOpCodes = false;
 

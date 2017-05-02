@@ -184,7 +184,7 @@ void Chip8::loadGame(const std::string& romName)
 void Chip8::saveState(const std::string& saveLocation)
 {
 	std::string s = __func__;
-	Logger::LogWarning(s+ " >> SAVE CHIP8: Not implemented!");
+	Logger::LogWarning(s + " >> SAVE CHIP8: Not implemented!");
 }
 
 /* Emulator emulation cycle */
@@ -271,24 +271,24 @@ void Chip8::executeOpcode(unsigned short opCode)
 		switch (opCode & 0x000F)
 		{
 			// Skip if Vx == Vy
-			case 0x0000:
-			{
-				unsigned short x = (opCode & 0x0F00) >> 8;
-				unsigned short y = (opCode & 0x00F0) >> 4;
-				if (m_V[x] == m_V[y])
-					m_Pc += 2;
+		case 0x0000:
+		{
+			unsigned short x = (opCode & 0x0F00) >> 8;
+			unsigned short y = (opCode & 0x00F0) >> 4;
+			if (m_V[x] == m_V[y])
 				m_Pc += 2;
-			}break;
-			// Skip if Vx > Vy
-			case 0x0001:
-			{
-				unsigned short x = (opCode & 0x0F00) >> 8;
-				unsigned short y = (opCode & 0x00F0) >> 4;
-				if (m_V[x] > m_V[y])
-					m_Pc += 2;
+			m_Pc += 2;
+		}break;
+		// Skip if Vx > Vy
+		case 0x0001:
+		{
+			unsigned short x = (opCode & 0x0F00) >> 8;
+			unsigned short y = (opCode & 0x00F0) >> 4;
+			if (m_V[x] > m_V[y])
+				m_Pc += 2;
 
-				m_Pc += 2;
-			}break;
+			m_Pc += 2;
+		}break;
 		}
 	}break;
 	case 0x6000: {
@@ -454,7 +454,7 @@ void Chip8::executeOpcode(unsigned short opCode)
 		case 0x000A: {
 			// Wait for key press -> Store value in Vx
 			bool keyPressed = false;
-			
+
 			for (int i = 0; i < 16; ++i)
 			{
 				bool k = m_Keys[i];
@@ -515,7 +515,7 @@ void Chip8::executeOpcode(unsigned short opCode)
 		Logger::LogOpCode(opCode, "unknown operator code.");
 		break;
 	}
-	if(m_LogOpCodes)
+	if (m_LogOpCodes)
 		Logger::LogOpCode(opCode);
 }
 
@@ -562,6 +562,9 @@ void Chip8::onGui(struct nk_context* ctx)
 			if (nk_menu_item_label(ctx, ((m_ShowFlags&ShowStacks) ? "Stack*" : "Stack"), NK_TEXT_LEFT)) {
 				m_ShowFlags = (m_ShowFlags ^ ShowStacks);
 			}
+			if (nk_menu_item_label(ctx, ((m_ShowFlags&ShowMemory) ? "Memory*" : "Memory"), NK_TEXT_LEFT)) {
+				m_ShowFlags = (m_ShowFlags ^ ShowMemory);
+			}
 			nk_menu_end(ctx);
 		}
 		nk_layout_row_end(ctx);
@@ -582,20 +585,20 @@ void Chip8::onGui(struct nk_context* ctx)
 	{
 		if (nk_begin(ctx, "Registers", nk_rect(640, 110, 100, 0xF * 21 + 5), NK_WINDOW_CLOSABLE | NK_WINDOW_BORDER | NK_WINDOW_MOVABLE))
 		{
-				for (int i = 0; i < 0xF; ++i)
+			for (int i = 0; i < 0xF; ++i)
+			{
+				nk_layout_row_dynamic(ctx, 14, 2);
 				{
-					nk_layout_row_dynamic(ctx, 14, 2);
-					{
-						nk_layout_row_push(ctx, 0.25f);
-						std::string rVal = "V" + std::to_string(i) + ":";
-						nk_label(ctx, rVal.c_str(), NK_TEXT_LEFT);
-						nk_layout_row_push(ctx, 0.7f);
-						std::string v = std::to_string(GetRegisters()[i]);
-						nk_label(ctx, v.c_str(), NK_TEXT_RIGHT);
+					nk_layout_row_push(ctx, 0.25f);
+					std::string rVal = "V" + std::to_string(i) + ":";
+					nk_label(ctx, rVal.c_str(), NK_TEXT_LEFT);
+					nk_layout_row_push(ctx, 0.7f);
+					std::string v = std::to_string(GetRegisters()[i]);
+					nk_label(ctx, v.c_str(), NK_TEXT_RIGHT);
 
-					}
 				}
-			
+			}
+
 		}
 		else m_ShowFlags &= ~ShowRegisters;
 		nk_end(ctx);
@@ -605,14 +608,14 @@ void Chip8::onGui(struct nk_context* ctx)
 	if (m_ShowFlags & ShowSettings)
 	{
 		float w = 270;
-		if (nk_begin(ctx,"Settings",nk_rect(0,60,300,300),NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_TITLE|NK_WINDOW_CLOSABLE))
+		if (nk_begin(ctx, "Settings", nk_rect(0, 60, 300, 300), NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_TITLE | NK_WINDOW_CLOSABLE))
 		{
-			nk_layout_row_begin(ctx, NK_STATIC,25, 3);
+			nk_layout_row_begin(ctx, NK_STATIC, 25, 3);
 
 			nk_layout_row_push(ctx, 0.2f*w);
 
 			nk_label(ctx, "EmuSpeed: ", NK_TEXT_LEFT);
-			nk_layout_row_push(ctx, 0.6f*w );
+			nk_layout_row_push(ctx, 0.6f*w);
 			float v = 1 / MAX_EMULATE_RATE;
 			nk_slider_float(ctx, 2, &v, 1200, 1.0f);
 			MAX_EMULATE_RATE = 1.0f / v;
@@ -622,7 +625,7 @@ void Chip8::onGui(struct nk_context* ctx)
 			nk_layout_row_end(ctx);
 
 			nk_layout_row_begin(ctx, NK_DYNAMIC, 25, 2);
-			nk_layout_row_push(ctx,0.2f);
+			nk_layout_row_push(ctx, 0.2f);
 			nk_label(ctx, "Log: ", NK_TEXT_LEFT);
 			nk_layout_row_push(ctx, 0.8f);
 			m_LogOpCodes = !nk_check_label(ctx, "", !m_LogOpCodes);
@@ -632,13 +635,13 @@ void Chip8::onGui(struct nk_context* ctx)
 		nk_end(ctx);
 
 	}
-	if (m_ShowFlags& ShowStacks)
+	if (m_ShowFlags & ShowStacks)
 	{
 		float w = 270;
 		if (nk_begin(ctx, "Stack", nk_rect(0, 60, w, 300), NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_CLOSABLE))
 		{
 			/* Iterator through the stack and show it */
-			unsigned short opcode = m_Memory[m_Pc];
+			unsigned short opcode = m_Memory[m_Pc] << 8 | m_Memory[m_Pc + 1];
 			nk_layout_row_begin(ctx, NK_DYNAMIC, 14, 3);
 			{
 				nk_layout_row_push(ctx, 0.33f);
@@ -662,6 +665,27 @@ void Chip8::onGui(struct nk_context* ctx)
 			}
 		}
 		else  m_ShowFlags &= ~ShowStacks;
+		nk_end(ctx);
+	}
+	if (m_ShowFlags & ShowMemory)
+	{
+		float w = 270;
+		if (nk_begin(ctx, "Memory", nk_rect(0, 60, w, 300), NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_CLOSABLE))
+		{
+			nk_list_view v;
+			nk_layout_row_dynamic(ctx, 250, 1);
+			nk_list_view_begin(ctx, &v, "MemoryInstructions", 0, 12, 3583);
+			nk_layout_row_dynamic(ctx, 11, 1);
+			for (int i = 0; i < v.count; i++)
+			{
+				// Extract opcode
+				unsigned short OpCode = m_Memory[m_Pc + i] << 8 | m_Memory[m_Pc + 1 + i];
+				nk_label(ctx, ToHex(OpCode).c_str(), NK_TEXT_CENTERED);
+			}
+
+			nk_list_view_end(&v);
+		}
+		else  m_ShowFlags &= ~ShowMemory;
 		nk_end(ctx);
 	}
 }
