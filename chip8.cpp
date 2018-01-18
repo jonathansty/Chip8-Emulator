@@ -47,6 +47,7 @@ void Chip8::init()
 	m_DelayTimer = 0;
 	m_SoundTimer = 0;
 }
+
 void Chip8::create_display()
 {
 	// Creating a vertex attribute array
@@ -127,6 +128,7 @@ void Chip8::create_display()
 	CheckError();
 	m_DisplayData.texture = texture;
 }
+
 void Chip8::initialize()
 {
 	Logger::LogInfo("Initializing Chip8!");
@@ -160,6 +162,7 @@ void Chip8::initialize()
 
 	// Reset timers
 }
+
 void Chip8::loadGame(const std::string& romName)
 {
 	// open file in binary and fill memory from location 0x200
@@ -215,24 +218,22 @@ void Chip8::executeOpcode(unsigned short opCode)
 	switch (opCode & 0xF000)
 	{
 	case 0x0000: { // Some opcodes need more information
-		switch (opCode & 0x00FF)
+		switch (opCode & 0x000F)
 		{
-		case 0x00E0:// 0x00E0 Clear the screen
+		case 0x0000:// 0x00E0 Clear the screen
 			memset(m_Gfx, 0, 64 * 32);
 			drawFlag = true;
 			m_Pc += 2;
 			break;
-		case 0x00EE: {
+		case 0x000E: {
 			// 0x00EE: Returns from Subroutine
 			// Set program counter to address on top of stack and decrement
+			--m_Sp;
 			m_Pc = m_Stack[m_Sp];
-			m_Sp -= 1;
 			m_Pc += 2;
 		}break;
 		default:
-			unsigned int loc = opCode & 0x0FFF;
-			m_Pc = loc;
-			m_Pc += 2;
+			Logger::LogOpCode(opCode, "unknown operator code.");
 			break;
 		}
 	}break;
@@ -243,8 +244,8 @@ void Chip8::executeOpcode(unsigned short opCode)
 	case 0x2000: {
 		// Call subroutine at NNN
 		// Store our current Location in the stack
-		++m_Sp;
 		m_Stack[m_Sp] = m_Pc;
+		++m_Sp;
 		// Increment our stack to not overwrite it
 		// Jump to address NNN
 		m_Pc = opCode & 0x0FFF;

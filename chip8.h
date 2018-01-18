@@ -28,10 +28,12 @@ private:
 	void create_display();
 	void updateCounters();
 	void executeOpcode(unsigned short opCode);
+
 	/* Computer architecture */
 	// Chip 8 has 35 operation codes which are 2 bytes long
 	const float  TIMER_RATE = 1.0f / 60.0f;
 	float MAX_EMULATE_RATE = 1.0f / 200.0f;
+
 	float m_EmulateTimer = MAX_EMULATE_RATE;
 	float m_UpdateTimer = TIMER_RATE;
 	std::string m_CurrentGame = "PONG";
