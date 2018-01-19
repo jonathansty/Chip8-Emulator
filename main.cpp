@@ -8,7 +8,7 @@
 #define MAX_ELEMENT_BUFFER 128 * 1024
 
 const std::string GAME = "PONG";
-GLFWwindow* pWindow = nullptr;
+GLFWwindow* g_pWindow = nullptr;
 const int WIDTH = 640 * 2;
 const int HEIGHT = 320 * 2;
 Chip8* pChip8 = nullptr;
@@ -32,13 +32,15 @@ bool init()
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 	/* Create the window */
-	pWindow = glfwCreateWindow(WIDTH, HEIGHT, "Chip 8", nullptr, nullptr);
-	if (!pWindow)
+	g_pWindow = glfwCreateWindow(WIDTH, HEIGHT, "Chip 8", nullptr, nullptr);
+
+
+	if (!g_pWindow)
 	{
 		glfwTerminate();
 		return false;
 	}
-	glfwMakeContextCurrent(pWindow);
+	glfwMakeContextCurrent(g_pWindow);
 	glewExperimental = 1;
 	if (glewInit() != GLEW_OK)
 	{
@@ -52,7 +54,7 @@ void drop_callback(GLFWwindow* window, int count, const char** paths)
 	if (count > 0)
 	{
 		if (pChip8 != nullptr)
-			pChip8->loadGame(paths[0]);
+			pChip8->LoadGame(paths[0]);
 	}
 }
 
@@ -60,9 +62,10 @@ void nk_gui_update(nk_context* nk_ctx)
 {
 
 }
+
 void Draw(const IDrawable& d)
 {
-	d.onDraw(pWindow);
+	d.OnDraw(g_pWindow);
 }
 /* Main entry point */
 int main(const int* argc, const char** argv)
@@ -72,15 +75,16 @@ int main(const int* argc, const char** argv)
 
 	Chip8 myChip;
 	pChip8 = &myChip;
-	myChip.initialize();
+	myChip.Initialize();
 	std::string games = "res/Games/";
-	myChip.loadGame(games + GAME);
+	myChip.LoadGame(games + GAME);
 
-	glfwSetKeyCallback(pWindow, Chip8::setKeys);
-	glfwSetDropCallback(pWindow, drop_callback);
+	// #todo : Make the callback find out what emulator is running
+	glfwSetKeyCallback(g_pWindow, Chip8::SetKeys);
+	glfwSetDropCallback(g_pWindow, drop_callback);
 
 	/* Init NK GUI */
-	nk_context* nk_ctx = nk_glfw3_init(pWindow, NK_GLFW3_INSTALL_CALLBACKS);
+	nk_context* nk_ctx = nk_glfw3_init(g_pWindow, NK_GLFW3_INSTALL_CALLBACKS);
 	float alpha = 0.8f;
 	nk_ctx->style.window.fixed_background = nk_style_item_color(nk_rgba_f(0.1f,0.12f,0.1f, alpha));
 	nk_ctx->style.window.background = nk_rgba_f(0.1f, 0.12f, 0.1f, alpha);
@@ -95,7 +99,7 @@ int main(const int* argc, const char** argv)
 	glfwSwapInterval(0);
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	float currTime = (float)glfwGetTime();
-	while (!glfwWindowShouldClose(pWindow))
+	while (!glfwWindowShouldClose(g_pWindow))
 	{
 		/* deltaTime calculation */
 		float prevTime = currTime;
@@ -109,21 +113,21 @@ int main(const int* argc, const char** argv)
 
 
 		/* Emulator updating*/
-		myChip.emulateCycle(dt);
+		myChip.EmulateCycle(dt);
 
 		/* NK gui updating */
-		myChip.onGui(nk_ctx);
+		myChip.OnGUI(nk_ctx);
 		glClear(GL_COLOR_BUFFER_BIT);
 		/* Drawing emulator */
 		Draw(myChip);
 		
 		// Don't forget state reset
 		nk_glfw3_render(NK_ANTI_ALIASING_ON, MAX_VERTEX_BUFFER, MAX_ELEMENT_BUFFER);
-		glfwSwapBuffers(pWindow);
+		glfwSwapBuffers(g_pWindow);
 	}
 
 	/* Cleanup font atlas*/
-	myChip.shutdown();
+	myChip.Shutdown();
 	nk_glfw3_shutdown();
 	glfwTerminate();
 }

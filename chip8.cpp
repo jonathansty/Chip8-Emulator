@@ -30,25 +30,7 @@ Chip8::Chip8() :m_Opcode(0), m_I(0), m_Pc(0), m_Sp(0)
 {
 }
 
-/* Emulator initialization */
-void Chip8::init()
-{
-	m_Pc = 0x200;
-	m_Opcode = 0;
-	m_I = 0;
-	m_Sp = 0;
-
-	memset(m_Gfx, 0, 64 * 32);
-	memset(m_Memory, 0, 4096);
-	memset(m_Stack, 0, 16);
-	memset(m_Keys, 0, 16);
-	memset(m_V, 0, 16);
-
-	m_DelayTimer = 0;
-	m_SoundTimer = 0;
-}
-
-void Chip8::create_display()
+void Chip8::CreateDisplay()
 {
 	// Creating a vertex attribute array
 	// Each time we will call AttribPointer -> information stored in vao
@@ -129,11 +111,45 @@ void Chip8::create_display()
 	m_DisplayData.texture = texture;
 }
 
-void Chip8::initialize()
+extern GLFWwindow* g_pWindow;
+void Chip8::Initialize()
 {
+	int Width, Height;
+	GLFWmonitor* pMonitor = glfwGetWindowMonitor(g_pWindow);
+	if (!pMonitor)
+	{
+		int cnt = 0;
+		GLFWmonitor** monitors = glfwGetMonitors(&cnt);
+
+		for (int i = 0; i < cnt; ++i)
+		{
+			pMonitor = monitors[i];
+			break;
+		}
+	}
+	
+	glfwGetMonitorPhysicalSize(pMonitor, &Width, &Height);
+
+	const GLFWvidmode* mode = glfwGetVideoMode(pMonitor);
+	m_DPI = mode->width / (Width / 25.4);
+
 	Logger::LogInfo("Initializing Chip8!");
-	init();
-	create_display();
+
+	m_Pc = 0x200;
+	m_Opcode = 0;
+	m_I = 0;
+	m_Sp = 0;
+
+	memset(m_Gfx, 0, 64 * 32);
+	memset(m_Memory, 0, 4096);
+	memset(m_Stack, 0, 16);
+	memset(m_Keys, 0, 16);
+	memset(m_V, 0, 16);
+
+	m_DelayTimer = 0;
+	m_SoundTimer = 0;
+
+	CreateDisplay();
 
 	// Load our font set
 	for (int i = 0; i < 80; ++i)
@@ -163,7 +179,7 @@ void Chip8::initialize()
 	// Reset timers
 }
 
-void Chip8::loadGame(const std::string& romName)
+void Chip8::LoadGame(const std::string& romName)
 {
 	// open file in binary and fill memory from location 0x200
 	std::ifstream game(romName, std::ios::binary | std::ios::ate);
@@ -178,20 +194,20 @@ void Chip8::loadGame(const std::string& romName)
 	char *buffer = new char[size];
 	game.read(buffer, size);
 
-	initialize();
+	Initialize();
 	memcpy(&m_Memory[0x200], buffer, size);
 	// TODO: Make platform independent
 	m_CurrentGame = romName;
 }
 
-void Chip8::saveState(const std::string& saveLocation)
+void Chip8::SaveState(const std::string& saveLocation)
 {
 	std::string s = __func__;
 	Logger::LogWarning(s + " >> SAVE CHIP8: Not implemented!");
 }
 
 /* Emulator emulation cycle */
-void Chip8::emulateCycle(float dt)
+void Chip8::EmulateCycle(float dt)
 {
 	// fetch Opcode
 	// Fetch 2 bytes -> merge
@@ -202,18 +218,18 @@ void Chip8::emulateCycle(float dt)
 	if (m_EmulateTimer < 0)
 	{
 		m_EmulateTimer = MAX_EMULATE_RATE;
-		executeOpcode(opCode);
+		ExecuteOpCode(opCode);
 	}
 	m_UpdateTimer -= dt;
 	if (m_UpdateTimer < 0) {
 		m_UpdateTimer = TIMER_RATE;
-		updateCounters();
+		UpdateCounters();
 	}
 
 
 }
 
-void Chip8::executeOpcode(unsigned short opCode)
+void Chip8::ExecuteOpCode(unsigned short opCode)
 {
 	switch (opCode & 0xF000)
 	{
@@ -222,7 +238,7 @@ void Chip8::executeOpcode(unsigned short opCode)
 		{
 		case 0x0000:// 0x00E0 Clear the screen
 			memset(m_Gfx, 0, 64 * 32);
-			drawFlag = true;
+			m_DrawFlag = true;
 			m_Pc += 2;
 			break;
 		case 0x000E: {
@@ -422,7 +438,7 @@ void Chip8::executeOpcode(unsigned short opCode)
 
 			}
 		}
-		drawFlag = true;
+		m_DrawFlag = true;
 		m_Pc += 2;
 	}break;
 	case 0xE000: {
@@ -520,7 +536,7 @@ void Chip8::executeOpcode(unsigned short opCode)
 		Logger::LogOpCode(opCode);
 }
 
-void Chip8::updateCounters()
+void Chip8::UpdateCounters()
 {
 	// update timers
 	if (m_DelayTimer > 0)
@@ -535,7 +551,7 @@ void Chip8::updateCounters()
 }
 
 /* Debug GUI drawing */
-void Chip8::onGui(struct nk_context* ctx)
+void Chip8::OnGUI(struct nk_context* ctx)
 {
 	nk_style_push_style_item(ctx, &ctx->style.window.fixed_background, nk_style_item_color(nk_rgba(0, 0, 0, 0)));
 	if (nk_begin(ctx, "Main menu", nk_rect(0, 0, 1280, 35), 0))
@@ -548,7 +564,7 @@ void Chip8::onGui(struct nk_context* ctx)
 			nk_layout_row_dynamic(ctx, 25, 1);
 			if (nk_menu_item_label(ctx, "Reload", NK_TEXT_LEFT))
 			{
-				loadGame(m_CurrentGame);
+				LoadGame(m_CurrentGame);
 			}
 			nk_menu_end(ctx);
 		}
@@ -692,19 +708,19 @@ void Chip8::onGui(struct nk_context* ctx)
 }
 
 /* Emulator drawing */
-void Chip8::onDraw(GLFWwindow* pWindow) const
+void Chip8::OnDraw(GLFWwindow* pWindow) const
 {
 	int w, h;
 	glfwGetWindowSize(pWindow, &w, &h);
 	glViewport(15, 15, w - 30, h - 30);
 
-	if (drawFlag)
+	if (m_DrawFlag)
 	{
 		// Update our texture
 		glBindTexture(GL_TEXTURE_2D, m_DisplayData.texture);
 		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 64, 32, GL_RED, GL_UNSIGNED_BYTE, GetGraphics());
 		// Draw our texture
-		drawFlag = false;
+		m_DrawFlag = false;
 	}
 
 	double s = glfwGetTime();
@@ -717,13 +733,13 @@ void Chip8::onDraw(GLFWwindow* pWindow) const
 }
 
 /* Cleanup */
-void Chip8::shutdown()
+void Chip8::Shutdown()
 {
 	Free(m_DisplayData);
 }
 
 /* Static input binding */
-void Chip8::setKeys(GLFWwindow* window, int key, int scannode, int action, int mods)
+void Chip8::SetKeys(GLFWwindow* window, int key, int scannode, int action, int mods)
 {
 	/* Map keys to hex keypad */
 	// Translate pressed key into keypad 

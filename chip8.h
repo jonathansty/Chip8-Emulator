@@ -1,43 +1,51 @@
 #pragma once
 #include "Abstracts.h"
-class Chip8 : public BaseEmulator
+class Chip8 : public IEmulator
 {
 public:
 	Chip8();
-	virtual void initialize() override;
-	virtual void loadGame(const std::string& romName) override;
-	virtual void saveState(const std::string& saveLocation) override;
-	virtual void emulateCycle(float dt) override;
-	virtual void onGui(struct nk_context* ctx) override;
-	virtual void onDraw(GLFWwindow* pWindow)const override;
-	virtual void shutdown() override;
-	static void setKeys(GLFWwindow* window, int key, int scannode, int action, int mods);
 
+	// BEGIN IEmulator
+	virtual void Initialize() override;
+	virtual void Shutdown() override;
+	virtual void LoadGame(const std::string& romName) override;
+	virtual void SaveState(const std::string& saveLocation) override;
+	virtual void EmulateCycle(float dt) override;
+	virtual void OnGUI(struct nk_context* ctx) override;
+	// END IEmulator
 
-	unsigned char const*GetGraphics() const
+	// BEGIN IDrawable
+	virtual void OnDraw(GLFWwindow* pWindow)const override;
+	// END IDrawable
+
+	static  void SetKeys(GLFWwindow* window, int key, int scannode, int action, int mods);
+
+	unsigned char const* GetGraphics() const
 	{
 		return m_Gfx;
 	}
-	unsigned char *GetRegisters()
+	unsigned char* GetRegisters()
 	{
 		return m_V;
 	}
 private:
-	/* Private functions */
-	void init();
-	void create_display();
-	void updateCounters();
-	void executeOpcode(unsigned short opCode);
+	void CreateDisplay();
+
+	void UpdateCounters();
+	
+	void ExecuteOpCode(unsigned short opCode);
+
 
 	/* Computer architecture */
 	// Chip 8 has 35 operation codes which are 2 bytes long
 	const float  TIMER_RATE = 1.0f / 60.0f;
 	float MAX_EMULATE_RATE = 1.0f / 200.0f;
+	double m_DPI = 1;
 
 	float m_EmulateTimer = MAX_EMULATE_RATE;
 	float m_UpdateTimer = TIMER_RATE;
 	std::string m_CurrentGame = "PONG";
-	mutable bool drawFlag = false;
+	mutable bool m_DrawFlag = false;
 
 	/* Debug information drawing */
 	enum ShowFlags : int
