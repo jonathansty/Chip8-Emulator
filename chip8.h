@@ -6,34 +6,34 @@ public:
 	Chip8();
 
 	// BEGIN IEmulator
-	virtual void Initialize() override;
-	virtual void Shutdown() override;
-	virtual void LoadGame(const std::string& romName) override;
-	virtual void SaveState(const std::string& saveLocation) override;
-	virtual void EmulateCycle(float dt) override;
-	virtual void OnGUI(struct nk_context* ctx) override;
+	virtual void init() override;
+	virtual void deinit() override;
+	virtual void load_rom(const std::string& romName) override;
+	virtual void save_state(const std::string& saveLocation) override;
+	virtual void update(float dt) override;
+	virtual void on_gui(struct nk_context* ctx) override;
 	// END IEmulator
 
 	// BEGIN IDrawable
-	virtual void OnDraw(GLFWwindow* pWindow)const override;
+	virtual void on_draw(GLFWwindow* pWindow)const override;
 	// END IDrawable
 
-	static  void SetKeys(GLFWwindow* window, int key, int scannode, int action, int mods);
+	void set_keys(GLFWwindow* window, int key, int scannode, int action, int mods);
 
-	unsigned char const* GetGraphics() const
+	unsigned char const* get_gfx() const
 	{
 		return m_Gfx;
 	}
-	unsigned char* GetRegisters()
+	unsigned char* get_registers()
 	{
 		return m_V;
 	}
 private:
-	void CreateDisplay();
+	void create_display();
 
-	void UpdateCounters();
+	void update_cntrs();
 	
-	void ExecuteOpCode(unsigned short opCode);
+	void execute_op_code(unsigned short opCode);
 
 
 	/* Computer architecture */
@@ -50,12 +50,12 @@ private:
 	/* Debug information drawing */
 	enum ShowFlags : int
 	{
-		ShowRegisters = 0x01,
-		ShowSettings = 0x01 << 1,
-		ShowStacks = 0x01 << 2,
-		ShowMemory = 0x01 << 3
+		ShowFlags_ShowRegisters = 0x01,
+		ShowFlags_ShowSettings = 0x01 << 1,
+		ShowFlags_ShowStacks = 0x01 << 2,
+		ShowFlags_ShowMemory = 0x01 << 3
 	};
-	int m_ShowFlags = (ShowRegisters | ShowSettings | ShowStacks | ShowMemory);
+	int m_ShowFlags = (ShowFlags_ShowRegisters | ShowFlags_ShowSettings | ShowFlags_ShowStacks | ShowFlags_ShowMemory);
 
 	bool m_LogOpCodes = false;
 
@@ -76,11 +76,9 @@ private:
 	// 0x200-0xFFF -> Program ROM and work RAM
 
 	// Display is 64 x 32 
-
-		
 	unsigned char m_Gfx[64*32];
 	unsigned short m_Stack[16];
-	unsigned short m_Sp;
+	unsigned short m_Sp; // stack pointer
 
 	static bool m_Keys[16];
 

@@ -1,9 +1,9 @@
 #pragma once
 
-
 #define NOMINMAX
 #define _CRT_SECURE_NO_WARNINGS
 
+#include <Windows.h>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -13,7 +13,6 @@
 #pragma comment(lib,"glfw3.lib")
 #pragma comment(lib, "glew32s.lib")
 
-#include <Windows.h>
 
 #include <iostream>
 #include <sstream>

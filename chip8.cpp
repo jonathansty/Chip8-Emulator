@@ -4,7 +4,27 @@
 #include "nuklear.h"
 
 bool Chip8::m_Keys[16]{};
-std::map<char, char>  Chip8::m_Keymap;
+std::map<char, char>  Chip8::m_Keymap = {
+	{'1', '1'},
+	{'2', '2'},
+	{'3', '3'},
+	{'4', 'C'},
+
+	{'Q', '4'},
+	{'W', '5'},
+	{'E', '6'},
+	{'R', 'D'},
+
+	{'A', '7'},
+	{'S', '8'},
+	{'D', '9'},
+	{'F', 'E'},
+
+	{'Z', 'A'},
+	{'x', '0'},
+	{'C', 'B'},
+	{'V', 'F'}
+};
 
 unsigned char chip8_fontset[80] =
 {
@@ -26,11 +46,14 @@ unsigned char chip8_fontset[80] =
 	0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 };
 
-Chip8::Chip8() :m_Opcode(0), m_I(0), m_Pc(0), m_Sp(0)
+Chip8::Chip8() 
+	: m_I(0)
+	, m_Pc(0)
+	, m_Sp(0)
 {
 }
 
-void Chip8::CreateDisplay()
+void Chip8::create_display()
 {
 	// Creating a vertex attribute array
 	// Each time we will call AttribPointer -> information stored in vao
@@ -112,7 +135,7 @@ void Chip8::CreateDisplay()
 }
 
 extern GLFWwindow* g_pWindow;
-void Chip8::Initialize()
+void Chip8::init()
 {
 	int Width, Height;
 	GLFWmonitor* pMonitor = glfwGetWindowMonitor(g_pWindow);
@@ -135,8 +158,8 @@ void Chip8::Initialize()
 
 	Logger::LogInfo("Initializing Chip8!");
 
+	// Chip-8 roms start at 0x200 in memory
 	m_Pc = 0x200;
-	m_Opcode = 0;
 	m_I = 0;
 	m_Sp = 0;
 
@@ -149,37 +172,14 @@ void Chip8::Initialize()
 	m_DelayTimer = 0;
 	m_SoundTimer = 0;
 
-	CreateDisplay();
+	create_display();
 
 	// Load our font set
 	for (int i = 0; i < 80; ++i)
 		m_Memory[i] = chip8_fontset[i];
-
-	// Load our input mappings
-	m_Keymap['1'] = '1';
-	m_Keymap['2'] = '2';
-	m_Keymap['3'] = '3';
-	m_Keymap['4'] = 'C';
-
-	m_Keymap['Q'] = '4';
-	m_Keymap['W'] = '5';
-	m_Keymap['E'] = '6';
-	m_Keymap['R'] = 'D';
-
-	m_Keymap['A'] = '7';
-	m_Keymap['S'] = '8';
-	m_Keymap['D'] = '9';
-	m_Keymap['F'] = 'E';
-
-	m_Keymap['Z'] = 'A';
-	m_Keymap['X'] = '0';
-	m_Keymap['C'] = 'B';
-	m_Keymap['V'] = 'F';
-
-	// Reset timers
 }
 
-void Chip8::LoadGame(const std::string& romName)
+void Chip8::load_rom(const std::string& romName)
 {
 	// open file in binary and fill memory from location 0x200
 	std::ifstream game(romName, std::ios::binary | std::ios::ate);
@@ -194,42 +194,43 @@ void Chip8::LoadGame(const std::string& romName)
 	char *buffer = new char[size];
 	game.read(buffer, size);
 
-	Initialize();
+	deinit();
+	init();
+
 	memcpy(&m_Memory[0x200], buffer, size);
-	// TODO: Make platform independent
+
 	m_CurrentGame = romName;
 }
 
-void Chip8::SaveState(const std::string& saveLocation)
+void Chip8::save_state(const std::string& saveLocation)
 {
 	std::string s = __func__;
 	Logger::LogWarning(s + " >> SAVE CHIP8: Not implemented!");
 }
 
 /* Emulator emulation cycle */
-void Chip8::EmulateCycle(float dt)
+void Chip8::update(float dt)
 {
 	// fetch Opcode
 	// Fetch 2 bytes -> merge
-
 	unsigned short opCode = m_Memory[m_Pc] << 8 | m_Memory[m_Pc + 1];
 
 	m_EmulateTimer -= dt;
 	if (m_EmulateTimer < 0)
 	{
 		m_EmulateTimer = MAX_EMULATE_RATE;
-		ExecuteOpCode(opCode);
+		execute_op_code(opCode);
 	}
 	m_UpdateTimer -= dt;
 	if (m_UpdateTimer < 0) {
 		m_UpdateTimer = TIMER_RATE;
-		UpdateCounters();
+		update_cntrs();
 	}
 
 
 }
 
-void Chip8::ExecuteOpCode(unsigned short opCode)
+void Chip8::execute_op_code(unsigned short opCode)
 {
 	switch (opCode & 0xF000)
 	{
@@ -536,7 +537,7 @@ void Chip8::ExecuteOpCode(unsigned short opCode)
 		Logger::LogOpCode(opCode);
 }
 
-void Chip8::UpdateCounters()
+void Chip8::update_cntrs()
 {
 	// update timers
 	if (m_DelayTimer > 0)
@@ -551,7 +552,7 @@ void Chip8::UpdateCounters()
 }
 
 /* Debug GUI drawing */
-void Chip8::OnGUI(struct nk_context* ctx)
+void Chip8::on_gui(struct nk_context* ctx)
 {
 	nk_style_push_style_item(ctx, &ctx->style.window.fixed_background, nk_style_item_color(nk_rgba(0, 0, 0, 0)));
 	if (nk_begin(ctx, "Main menu", nk_rect(0, 0, 1280, 35), 0))
@@ -564,23 +565,23 @@ void Chip8::OnGUI(struct nk_context* ctx)
 			nk_layout_row_dynamic(ctx, 25, 1);
 			if (nk_menu_item_label(ctx, "Reload", NK_TEXT_LEFT))
 			{
-				LoadGame(m_CurrentGame);
+				load_rom(m_CurrentGame);
 			}
 			nk_menu_end(ctx);
 		}
 		if (nk_menu_begin_label(ctx, "Windows", NK_TEXT_LEFT, nk_vec2(120, 200))) {
 			nk_layout_row_dynamic(ctx, 25, 1);
-			if (nk_menu_item_label(ctx, ((m_ShowFlags&ShowRegisters) ? "Registers*" : "Registers"), NK_TEXT_LEFT)) {
-				m_ShowFlags = (m_ShowFlags ^ ShowRegisters);
+			if (nk_menu_item_label(ctx, ((m_ShowFlags&ShowFlags_ShowRegisters) ? "Registers*" : "Registers"), NK_TEXT_LEFT)) {
+				m_ShowFlags = (m_ShowFlags ^ ShowFlags_ShowRegisters);
 			}
-			if (nk_menu_item_label(ctx, ((m_ShowFlags&ShowSettings) ? "Settings*" : "Settings"), NK_TEXT_LEFT)) {
-				m_ShowFlags = (m_ShowFlags ^ ShowSettings);
+			if (nk_menu_item_label(ctx, ((m_ShowFlags& ShowFlags_ShowSettings) ? "Settings*" : "Settings"), NK_TEXT_LEFT)) {
+				m_ShowFlags = (m_ShowFlags ^ ShowFlags_ShowSettings);
 			}
-			if (nk_menu_item_label(ctx, ((m_ShowFlags&ShowStacks) ? "Stack*" : "Stack"), NK_TEXT_LEFT)) {
-				m_ShowFlags = (m_ShowFlags ^ ShowStacks);
+			if (nk_menu_item_label(ctx, ((m_ShowFlags& ShowFlags_ShowStacks) ? "Stack*" : "Stack"), NK_TEXT_LEFT)) {
+				m_ShowFlags = (m_ShowFlags ^ ShowFlags_ShowStacks);
 			}
-			if (nk_menu_item_label(ctx, ((m_ShowFlags&ShowMemory) ? "Memory*" : "Memory"), NK_TEXT_LEFT)) {
-				m_ShowFlags = (m_ShowFlags ^ ShowMemory);
+			if (nk_menu_item_label(ctx, ((m_ShowFlags& ShowFlags_ShowMemory) ? "Memory*" : "Memory"), NK_TEXT_LEFT)) {
+				m_ShowFlags = (m_ShowFlags ^ ShowFlags_ShowMemory);
 			}
 			nk_menu_end(ctx);
 		}
@@ -598,31 +599,32 @@ void Chip8::OnGUI(struct nk_context* ctx)
 	nk_end(ctx);
 
 	/* Drawing our registers window*/
-	if (m_ShowFlags & ShowRegisters)
+	if (m_ShowFlags & ShowFlags_ShowRegisters)
 	{
 		if (nk_begin(ctx, "Registers", nk_rect(640, 110, 100, 0xF * 21 + 5), NK_WINDOW_CLOSABLE | NK_WINDOW_BORDER | NK_WINDOW_MOVABLE))
 		{
 			for (int i = 0; i < 0xF; ++i)
 			{
-				nk_layout_row_dynamic(ctx, 14, 2);
+				nk_layout_row_begin(ctx, nk_layout_format::NK_DYNAMIC, 14, 2);
 				{
 					nk_layout_row_push(ctx, 0.25f);
 					std::string rVal = "V" + std::to_string(i) + ":";
 					nk_label(ctx, rVal.c_str(), NK_TEXT_LEFT);
 					nk_layout_row_push(ctx, 0.7f);
-					std::string v = std::to_string(GetRegisters()[i]);
+					std::string v = std::to_string(get_registers()[i]);
 					nk_label(ctx, v.c_str(), NK_TEXT_RIGHT);
 
 				}
+				nk_layout_row_end(ctx);
 			}
 
 		}
-		else m_ShowFlags &= ~ShowRegisters;
+		else m_ShowFlags &= ~ShowFlags_ShowRegisters;
 		nk_end(ctx);
 	}
 
 	/* Drawing our settings window */
-	if (m_ShowFlags & ShowSettings)
+	if (m_ShowFlags & ShowFlags_ShowSettings)
 	{
 		float w = 270;
 		if (nk_begin(ctx, "Settings", nk_rect(0, 60, 300, 300), NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_TITLE | NK_WINDOW_CLOSABLE))
@@ -648,11 +650,11 @@ void Chip8::OnGUI(struct nk_context* ctx)
 			m_LogOpCodes = !nk_check_label(ctx, "", !m_LogOpCodes);
 			nk_layout_row_end(ctx);
 		}
-		else  m_ShowFlags &= ~ShowSettings;
+		else  m_ShowFlags &= ~ShowFlags_ShowSettings;
 		nk_end(ctx);
 
 	}
-	if (m_ShowFlags & ShowStacks)
+	if (m_ShowFlags & ShowFlags_ShowStacks)
 	{
 		float w = 270;
 		if (nk_begin(ctx, "Stack", nk_rect(0, 60, w, 300), NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_CLOSABLE))
@@ -667,7 +669,7 @@ void Chip8::OnGUI(struct nk_context* ctx)
 				nk_label(ctx, "TODO", NK_TEXT_LEFT);
 			}
 			nk_layout_row_end(ctx);
-			for (int i = 0; i < m_Sp; ++i)
+			for (size_t i = 0; i < std::size(m_Stack); ++i)
 			{
 				unsigned short address = m_Stack[i];
 				unsigned short opcode = m_Memory[address];
@@ -681,10 +683,10 @@ void Chip8::OnGUI(struct nk_context* ctx)
 				nk_layout_row_end(ctx);
 			}
 		}
-		else  m_ShowFlags &= ~ShowStacks;
+		else  m_ShowFlags &= ~ShowFlags_ShowStacks;
 		nk_end(ctx);
 	}
-	if (m_ShowFlags & ShowMemory)
+	if (m_ShowFlags & ShowFlags_ShowMemory)
 	{
 		float w = 270;
 		if (nk_begin(ctx, "Memory", nk_rect(0, 60, w, 300), NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_CLOSABLE))
@@ -702,13 +704,13 @@ void Chip8::OnGUI(struct nk_context* ctx)
 
 			nk_list_view_end(&v);
 		}
-		else  m_ShowFlags &= ~ShowMemory;
+		else  m_ShowFlags &= ~ShowFlags_ShowMemory;
 		nk_end(ctx);
 	}
 }
 
 /* Emulator drawing */
-void Chip8::OnDraw(GLFWwindow* pWindow) const
+void Chip8::on_draw(GLFWwindow* pWindow) const
 {
 	int w, h;
 	glfwGetWindowSize(pWindow, &w, &h);
@@ -718,7 +720,7 @@ void Chip8::OnDraw(GLFWwindow* pWindow) const
 	{
 		// Update our texture
 		glBindTexture(GL_TEXTURE_2D, m_DisplayData.texture);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 64, 32, GL_RED, GL_UNSIGNED_BYTE, GetGraphics());
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 64, 32, GL_RED, GL_UNSIGNED_BYTE, get_gfx());
 		// Draw our texture
 		m_DrawFlag = false;
 	}
@@ -733,13 +735,13 @@ void Chip8::OnDraw(GLFWwindow* pWindow) const
 }
 
 /* Cleanup */
-void Chip8::Shutdown()
+void Chip8::deinit()
 {
 	Free(m_DisplayData);
 }
 
 /* Static input binding */
-void Chip8::SetKeys(GLFWwindow* window, int key, int scannode, int action, int mods)
+void Chip8::set_keys(GLFWwindow* window, int key, int scannode, int action, int mods)
 {
 	/* Map keys to hex keypad */
 	// Translate pressed key into keypad 

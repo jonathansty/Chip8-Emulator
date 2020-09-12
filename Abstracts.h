@@ -3,23 +3,22 @@
 class IDrawable
 {
 public:
-	virtual void OnDraw(GLFWwindow* pWindow) const = 0;
+	virtual void on_draw(GLFWwindow* pWindow) const = 0;
 };
 
 class IEmulator : public IDrawable
 {
 public:
-	virtual void LoadGame(const std::string& RomName) = 0;
-	virtual void Initialize() = 0;
-	virtual void EmulateCycle(float dt) = 0;
-	virtual void SaveState(const std::string& SaveLocation) = 0;
+	virtual void init() = 0;
+	virtual void deinit() = 0;
+	virtual void load_rom(const std::string& RomName) = 0;
+	virtual void update(float dt) = 0;
+	virtual void save_state(const std::string& SaveLocation) = 0;
+
+	virtual void set_keys(GLFWwindow* window, int key, int scannode, int action, int mods) {};
 
 	// C style - Nuklear
-	virtual void OnGUI(struct nk_context* ctx) = 0;
-	virtual void Shutdown() = 0;
-
-	// TODO: Dispatch callbacks to right emulator
-	// static void setKeys(GLFWwindow* window, int key, int scannode, int action, int mods);
+	virtual void on_gui(struct nk_context* ctx) = 0;
 };
 
 /* DisplayData containing buffer data etc */

@@ -1,8 +1,7 @@
 solution "Emulators"
   DIR = path.getabsolute("") .. "/"
   LIBDIR = path.getabsolute("ThirdParty")
-  print("Dir: " .. DIR) 
-  print("Libdir: " .. LIBDIR) 
+
   location("build/")
   -- Configurations
   configurations{
@@ -10,8 +9,7 @@ solution "Emulators"
     "Release",
   }
   platforms{
-    "x32",
-    "native"
+    "x32"
   }
 
   project "Chip_8"
@@ -55,7 +53,6 @@ solution "Emulators"
       defines{ "GLEW_STATIC"}
 
     configuration{ "vs*" }
-      defines{ "WIN32"}
       pchheader "stdafx.h"
       pchsource "stdafx.cpp"
     configuration{}

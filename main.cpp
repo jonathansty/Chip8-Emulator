@@ -2,7 +2,7 @@
 #include "chip8.h"
 
 #include "nuklear.h"
-#include "nuklear_glfw_gl3.h"
+#include "nuklear_glfw_gl4.h"
 
 #define MAX_VERTEX_BUFFER 512 * 1024
 #define MAX_ELEMENT_BUFFER 128 * 1024
@@ -11,7 +11,7 @@ const std::string GAME = "PONG";
 GLFWwindow* g_pWindow = nullptr;
 const int WIDTH = 640 * 2;
 const int HEIGHT = 320 * 2;
-Chip8* pChip8 = nullptr;
+std::shared_ptr<IEmulator> s_current_emulator;
 
 /* Error callback */
 void error_callback(int code, const char* descr)
@@ -49,13 +49,22 @@ bool init()
 	}
 	return true;
 }
-void drop_callback(GLFWwindow* window, int count, const char** paths)
+static void on_file_drop_callback(GLFWwindow* window, int count, const char** paths)
 {
 	if (count > 0)
 	{
-		if (pChip8 != nullptr)
-			pChip8->LoadGame(paths[0]);
+		if (s_current_emulator != nullptr)
+			s_current_emulator->load_rom(paths[0]);
 	}
+}
+
+static void on_set_key_callback(GLFWwindow* window, int key, int scannode, int action, int mods)
+{
+	if (s_current_emulator)
+	{
+		s_current_emulator->set_keys(window, key, scannode, action, mods);
+	}
+
 }
 
 void nk_gui_update(nk_context* nk_ctx)
@@ -65,26 +74,28 @@ void nk_gui_update(nk_context* nk_ctx)
 
 void Draw(const IDrawable& d)
 {
-	d.OnDraw(g_pWindow);
+	d.on_draw(g_pWindow);
 }
 /* Main entry point */
 int main(const int* argc, const char** argv)
 {
+	// Setup the basic window features
 	init();
 
+	// Create the Chip8 emulator by default
+	s_current_emulator = std::make_shared<Chip8>();
+	s_current_emulator->init();
 
-	Chip8 myChip;
-	pChip8 = &myChip;
-	myChip.Initialize();
+	// Setup the games path
 	std::string games = "res/Games/";
-	myChip.LoadGame(games + GAME);
+	s_current_emulator->load_rom(games + GAME);
 
 	// #todo : Make the callback find out what emulator is running
-	glfwSetKeyCallback(g_pWindow, Chip8::SetKeys);
-	glfwSetDropCallback(g_pWindow, drop_callback);
+	glfwSetKeyCallback(g_pWindow, on_set_key_callback);
+	glfwSetDropCallback(g_pWindow, on_file_drop_callback);
 
 	/* Init NK GUI */
-	nk_context* nk_ctx = nk_glfw3_init(g_pWindow, NK_GLFW3_INSTALL_CALLBACKS);
+	nk_context* nk_ctx = nk_glfw3_init(g_pWindow, NK_GLFW3_INSTALL_CALLBACKS, MAX_VERTEX_BUFFER, MAX_ELEMENT_BUFFER);
 	float alpha = 0.8f;
 	nk_ctx->style.window.fixed_background = nk_style_item_color(nk_rgba_f(0.1f,0.12f,0.1f, alpha));
 	nk_ctx->style.window.background = nk_rgba_f(0.1f, 0.12f, 0.1f, alpha);
@@ -110,24 +121,23 @@ int main(const int* argc, const char** argv)
 		nk_glfw3_new_frame();
 		Logger::NewFrame();
 
-
-
 		/* Emulator updating*/
-		myChip.EmulateCycle(dt);
+		s_current_emulator->update(dt);
 
 		/* NK gui updating */
-		myChip.OnGUI(nk_ctx);
+		s_current_emulator->on_gui(nk_ctx);
 		glClear(GL_COLOR_BUFFER_BIT);
-		/* Drawing emulator */
-		Draw(myChip);
+
+		Draw(*s_current_emulator);
 		
 		// Don't forget state reset
-		nk_glfw3_render(NK_ANTI_ALIASING_ON, MAX_VERTEX_BUFFER, MAX_ELEMENT_BUFFER);
+		nk_glfw3_render(NK_ANTI_ALIASING_ON);
 		glfwSwapBuffers(g_pWindow);
 	}
 
 	/* Cleanup font atlas*/
-	myChip.Shutdown();
+	s_current_emulator->deinit();
+
 	nk_glfw3_shutdown();
 	glfwTerminate();
 }
